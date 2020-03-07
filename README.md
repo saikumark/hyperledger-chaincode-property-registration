@@ -5,10 +5,7 @@ Property Registration
 Smart Contract Solution Document
 
 
-Saikumar K
-
-1/6/2020
-
+Author: Saikumar K
 
 
 Document contains step by step guide to user who would like to understand different methods available implemented in the smart contracts and execute to understand the output.
@@ -17,11 +14,14 @@ Document contains step by step guide to user who would like to understand differ
  
 Introduction
 There are two smart contracts, 1) for User and 2) Registrar. NodeJS is used to write these smart contracts. 
+
 Pre-requisites
 These smart contracts were developed using the VM provided by Upgrad which contains necessary software for deploying and executing smart contracts. 
+
 Users
 •	Seller – Saikumar1, saikumar1@gmail.com, 1234123412341231
 •	Buyer – Saikumar2, saikumar2@gmail.com, 1234123412341232
+
 Step 1: Bootstrap the network	
 Command
 1.	Go to the ‘network’ folder of the project
