@@ -1,0 +1,179 @@
+NOTE: Please ignore this file
+******************************
+
+
+configtxgen -profile TwoOrgsChannel -channelID mychannel -outputAnchorPeersUpdate=Org2MSPanchors.tx -asOrg=Org2MSP
+
+configtxgen -profile CertificationChannel -outputAnchorPeersUpdate./channel-artifacts/mhrdMSPanchors.tx -channelID certificationchannel-asOrg mhrdMSP
+
+
+CORE_PEER_LOCALMSPID="mhrdMSP"
+
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/mhrd.certification-network.com/users/Admin@mhrd.certification-network.com/msp
+
+CORE_PEER_ADDRESS=peer0.mhrd.certification-network.com:9051
+
+peer channel join -b certificationchannel.block
+
+
+------------------------------------------------------
+
+DOCKER - Start Containers
+
+------------------------------------------------------
+
+docker ps -a
+docker-compose -f ./docker-compose.yml up -d
+docker ​exec​ -it cli /bin/bash - Enter into DOCKER
+
+peer channel create -o orderer.certification-network.com:7050 -ccertificationchannel -f ./channel-artifacts/channel.tx
+peer channel join -b certificationchannel.block
+
+CORE_PEER_ADDRESS=peer1.iit.certification-network.com:8051
+peer channel join -b certificationchannel.block
+
+Set environment variable to make next peer MHRD to join the network
+
+CORE_PEER_LOCALMSPID=​"mhrdMSP"
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/mhrd.certification-network.com/users/Admin@mhrd.certification-network.com/msp
+CORE_PEER_ADDRESS=peer0.mhrd.certification-network.com:9051
+
+peer channel join -b certificationchannel.block
+
+
+------------------------
+
+Chain code installation in peer0 of each organization in CLI container
+
+--------------------------
+
+peer chaincode install -n regnet -v 1.1 -l node -p/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode/
+
+For User
+
+CORE_PEER_LOCALMSPID=​"usersMSP"
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.property-registration-network.com/users/Admin@users.property-registration-network.com/msp
+CORE_PEER_ADDRESS=peer0.users.property-registration-network.com:9051
+
+peer chaincode install -n regnet -v 1.1 -l node -p/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode/
+
+For Registrar
+
+CORE_PEER_LOCALMSPID="registrarMSP"
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/registrar.property-registration-network.com/users/Admin@registrar.property-registration-network.com/msp
+CORE_PEER_ADDRESS=peer0.registrar.property-registration-network.com:7051
+
+peer chaincode install -n regnet -v 1.1 -l node -p/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode/
+
+-------------------------
+
+Chain Code Instantiation
+
+----------------------
+
+docker exec -it cli /bin/bash
+CORE_PEER_LOCALMSPID="usersMSP"
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.property-registration-network.com/users/Admin@users.property-registration-network.com/msp
+CORE_PEER_ADDRESS=peer0.users.property-registration-network.com:9051
+
+peer chaincode instantiate -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -l node -v 1.1 -c '{"Args":["org.property-registration-network.regnet.users:instantiate","org.property-registration-network.regnet.registrar:instantiate"]}' -P "OR ('usersMSP.member','registrarMSP.member')"
+
+
+-------------------------------
+Chain code container
+=--=-=-=-=-=-=-=-=-=-=-=-
+
+docker exec -it chaincode /bin/bash
+
+npm install (only first time)
+
+npm run start-dev
+
+------------------------
+
+Chain code invoke
+
+****************************************
+Invoke into peer0 of Users organization
+****************************************
+
+docker exec -it peer0.users.property-registration-network.com /bin/bash
+
+User1: Seller
+^^^^^^^^^^^^
+requestNewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:requestNewUser","Saikumar1","saikumar1@gmail.com","1234567890","1234123412341231"]}'
+rechargeAccount: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:rechargeAccount","Saikumar1","1234123412341231","upg500"]}'
+viewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:viewUser","Saikumar1","1234123412341231"]}'
+
+propertyRegistrationRequest: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:propertyRegistrationRequest","001","200","Saikumar1","1234123412341231"]}'
+updateProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:updateProperty","001","Saikumar1","1234123412341231","onSale"]}'
+viewProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:viewProperty","001"]}'
+
+2nd Property:
+propertyRegistrationRequest: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:propertyRegistrationRequest","002","600","Saikumar1","1234123412341231"]}'
+updateProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:updateProperty","002","Saikumar1","1234123412341231","onSale"]}'
+viewProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:viewProperty","002"]}'
+
+
+User 2: buyer
+^^^^^^^^^^^^^
+requestNewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:requestNewUser","Saikumar2","saikumar2@gmail.com","1234567892","1234123412341232"]}'
+rechargeAccount: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:rechargeAccount","Saikumar2","1234123412341232","upg500"]}'
+viewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:viewUser","Saikumar2","1234123412341232"]}'
+
+purchaseProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:purchaseProperty","001","Saikumar2","1234123412341232"]}'
+
+Property 2:
+purchaseProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:purchaseProperty","002","Saikumar2","1234123412341232"]}'
+
+
+****************************************
+Invoke into peer0 of Registrar organization
+****************************************
+
+docker exec -it peer0.registrar.property-registration-network.com /bin/bash
+
+User1: Seller
+^^^^^^^^^^^^
+approveNewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:approveNewUser","Saikumar1","1234123412341231"]}'
+viewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.users:viewUser","Saikumar1","1234123412341231"]}'
+approvePropertyRegistration: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:approvePropertyRegistration","001"]}'
+viewProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:viewProperty","001"]}'
+
+2nd Property:
+approvePropertyRegistration: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:approvePropertyRegistration","002"]}'
+viewProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:viewProperty","002"]}'
+
+
+User 2: buyer
+^^^^^^^^^^^^^
+approveNewUser: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:approveNewUser","Saikumar2","1234123412341232"]}'
+viewProperty: peer chaincode invoke -o orderer.property-registration-network.com:7050 -C registrationchannel -n regnet -c'{"Args":["org.property-registration-network.regnet.registrar:viewProperty","001"]}'
+
+
+-------------------------------------
+
+Chaincode install in all peers of peerOrganizations
+
+fabricNetwork.sh install
+
+-----------------------------------------
+
+Chaincode update with new version in all pers
+
+ ./fabricNetwork.sh update -v 1.2
+
+
+--------------------------------
+
+claenup dev peer Containers
+
+docker rmi $(docker images |grep 'dev-peer')
+
+docker rmi $(docker images | grep "none" | awk '/ / { print $3 }')
+
+$ docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+
+docker volume rm $(docker volume ls -qf dangling=true)
+$ docker volume ls -qf dangling=true | xargs -r docker volume rm
+docker rm $(docker ps -qa --no-trunc --filter "status=exited")
